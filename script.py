@@ -5,6 +5,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import ximu3csv
 
+from aeon.utils.discovery import all_estimators
+
+all_estimators("classifier", tag_filter={"algorithm_type": "convolution"})
+all_estimators("classifier", tag_filter={"algorithm_type": "convolution"})
+
+from aeon.classification.convolution_based import (
+    Arsenal,
+    HydraClassifier,
+    MiniRocketClassifier,
+    MultiRocketClassifier,
+    MultiRocketHydraClassifier,
+    RocketClassifier,
+)
+from sklearn.metrics import accuracy_score
+
 path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 devices = ximu3csv.read(path, ximu3csv.DataMessageType.INERTIAL)
@@ -76,8 +91,37 @@ impact_detection = np.maximum.reduce([np.roll(impact_detection, i) for i in rang
 impact_starts = np.where((impact_detection & ~np.roll(impact_detection, 1)))[0]  # index of each false to true transition
 impact_ends = impact_starts + IMPACT_HOLDOFF
 
-for impact_start, impact_end in zip(impact_starts, impact_ends):
-    axes[1].fill_between([seconds[impact_start],seconds[impact_end]],np.min(signal), np.max(signal),color="tab:green",alpha=0.2)
-    print(impact_end - impact_start)
+motions_train = np.empty([8, len(frequencies), 135])
+motions_labels_train = np.array(["desk", "desk", "desk", "desk", "bubble", "bubble", "bubble", "bubble"])
 
+motions_test = np.empty([8, len(frequencies), 135])
+motions_labels_test = np.array(["desk", "desk", "desk", "desk", "bubble", "bubble", "bubble", "bubble"])
+
+countera = 0
+counterb = 0
+for index, (impact_start, impact_end) in enumerate(zip(impact_starts, impact_ends)):
+    axes[1].fill_between([seconds[impact_start], seconds[impact_end]], np.min(signal), np.max(signal), color="tab:green", alpha=0.2)
+
+    seconds_start = seconds[impact_start]
+    seconds_end = seconds[impact_end]
+    index_start = np.argmax(times >= seconds_start)
+    index_end = index_start + 135  # np.argmax(times >= seconds_end)
+
+    if index in [0,1,2,3,8,9,10,11]:
+        motions_train[countera, :, :] = dbs[:, index_start:index_end]
+        countera += 1
+
+    if index in [4,5,6,7,12,13,14,15]:
+        motions_test[counterb, :, :] = dbs[:, index_start:index_end]
+        counterb += 1
+
+
+rocket = MiniRocketClassifier()
+rocket.fit(motions_train, motions_labels_train)
+
+y_pred = rocket.predict(motions_test)
+accuracy = accuracy_score(motions_labels_test, y_pred)
+
+print(y_pred)
+print (accuracy)
 plt.show()
