@@ -4,7 +4,6 @@ from typing import Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import ximu3csv
-
 from aeon.utils.discovery import all_estimators
 
 all_estimators("classifier", tag_filter={"algorithm_type": "convolution"})
@@ -107,11 +106,11 @@ for index, (impact_start, impact_end) in enumerate(zip(impact_starts, impact_end
     index_start = np.argmax(times >= seconds_start)
     index_end = index_start + 135  # np.argmax(times >= seconds_end)
 
-    if index in [0,1,2,3,8,9,10,11]:
+    if index in [0, 1, 2, 3, 8, 9, 10, 11]:
         motions_train[countera, :, :] = dbs[:, index_start:index_end]
         countera += 1
 
-    if index in [4,5,6,7,12,13,14,15]:
+    if index in [4, 5, 6, 7, 12, 13, 14, 15]:
         motions_test[counterb, :, :] = dbs[:, index_start:index_end]
         counterb += 1
 
@@ -123,5 +122,5 @@ y_pred = rocket.predict(motions_test)
 accuracy = accuracy_score(motions_labels_test, y_pred)
 
 print(y_pred)
-print (accuracy)
+print(accuracy)
 plt.show()
